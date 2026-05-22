@@ -41,22 +41,39 @@ jobs:
           Write-Host "Inno Setup installed"
 
       - name: 使用 PyInstaller 打包（单文件 exe）
+        shell: powershell
         run: |
+          # 找到 whisper 包的安装路径，提取其 assets 目录
+          $whisperDir = python -c "import whisper, os; print(os.path.dirname(whisper.__file__))"
+          Write-Host "Whisper path: $whisperDir"
+
+          # 找到 tiktoken 包路径（whisper 分词依赖）
+          $tiktokenDir = python -c "import tiktoken, os; print(os.path.dirname(tiktoken.__file__))"
+          Write-Host "Tiktoken path: $tiktokenDir"
+
           pyinstaller --onefile --windowed `
             --name "WhisperSTT" `
             --icon "image.ico" `
             --add-data "ui;ui" `
             --add-data "core;core" `
             --add-data "image.ico;." `
+            --add-data "${whisperDir}\assets;whisper\assets" `
             --hidden-import "sounddevice" `
             --hidden-import "soundfile" `
             --hidden-import "whisper" `
+            --hidden-import "whisper.audio" `
+            --hidden-import "whisper.tokenizer" `
+            --hidden-import "whisper.model" `
+            --hidden-import "tiktoken" `
+            --hidden-import "tiktoken_ext" `
+            --hidden-import "tiktoken_ext.openai_public" `
             --hidden-import "keyboard" `
             --hidden-import "pyperclip" `
             --hidden-import "win32gui" `
             --hidden-import "win32api" `
             --hidden-import "win32con" `
             --hidden-import "winreg" `
+            --collect-data "whisper" `
             main.py
 
       - name: 计算 SHA256

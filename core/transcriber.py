@@ -11,9 +11,26 @@ Whisper 转录模块 - 实时语音识别
   - 将结果通过回调返回给 UI 线程
 """
 
+import sys
+import os
 import threading
 import time
 import numpy as np
+
+# ── PyInstaller 打包路径修复 ────────────────────────────────
+# 当以 --onefile 模式打包时，whisper 的资源文件（mel_filters.npz,
+# multilingual.tiktoken 等）被解压到 _MEI* 临时目录。
+# 必须在 import whisper 之前，将该目录添加到模块搜索路径。
+if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    _mei = sys._MEIPASS
+    # 将 _MEIPASS 加入 sys.path，whisper 才能找到自己的 assets
+    if _mei not in sys.path:
+        sys.path.insert(0, _mei)
+    # 同时设置环境变量，确保 whisper 能定位 assets 目录
+    _whisper_assets = os.path.join(_mei, "whisper", "assets")
+    if os.path.isdir(_whisper_assets):
+        os.environ["WHISPER_ASSETS_DIR"] = _whisper_assets
+
 import whisper
 
 
