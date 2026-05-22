@@ -134,7 +134,10 @@ class DownloadThread(QThread):
                         downloaded += len(chunk)
                         self.progress.emit(downloaded, total)
 
-            tmp_path.rename(self._dest)
+            # 使用 os.replace() 代替 Path.rename()：
+            # Windows 上 rename 要求目标不存在（WinError 183），
+            # os.replace() 会原子性覆盖已有文件，两个平台均兼容。
+            os.replace(tmp_path, self._dest)
             self.finished.emit(True, "下载完成")
         except Exception as e:
             tmp_path.unlink(missing_ok=True)
@@ -243,15 +246,34 @@ class ModelRow(QWidget):
             self._start_download()
 
     def _start_download(self):
+        dest = get_model_path(self._info["filename"])
+
+        # 如果文件已完整存在，直接提示使用，无需重新下载
+        if is_model_downloaded(self._info["filename"]):
+            reply = QMessageBox.question(
+                self.window(), "模型已存在",
+                f"模型 {self._info['display']} 已下载。\n是否直接切换使用此模型？",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                self.use_model.emit(self._info["name"])
+            return
+
+        # 清理上次下载失败留下的 .tmp 残留文件
+        tmp_path = dest.with_suffix(".tmp")
+        if tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+
         self._btn.setText("取消")
         self._progress.setVisible(True)
         self._progress.setRange(0, 100)
         self._progress.setValue(0)
 
-        self._thread = DownloadThread(
-            self._info["url"],
-            get_model_path(self._info["filename"])
-        )
+        self._thread = DownloadThread(self._info["url"], dest)
         self._thread.progress.connect(self._on_progress)
         self._thread.finished.connect(self._on_finished)
         self._thread.start()
