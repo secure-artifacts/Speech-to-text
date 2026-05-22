@@ -34,7 +34,11 @@ jobs:
 
       - name: 安装 Inno Setup
         run: |
-          choco install innosetup --yes --no-progress
+          $url = "https://jrsoftware.org/download.php/is.exe"
+          $dest = "$env:TEMP\\innosetup.exe"
+          Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
+          Start-Process -FilePath $dest -ArgumentList "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" -Wait
+          Write-Host "Inno Setup installed"
 
       - name: 使用 PyInstaller 打包（单文件 exe）
         run: |
@@ -66,7 +70,14 @@ jobs:
       - name: 构建 Inno Setup 安装程序
         run: |
           New-Item -ItemType Directory -Force -Path installer_output | Out-Null
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+          # 动态查找 ISCC.exe
+          $iscc = Get-ChildItem -Path "C:\Program Files (x86)" -Recurse -Filter "ISCC.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $iscc) {
+            $iscc = Get-ChildItem -Path "C:\Program Files" -Recurse -Filter "ISCC.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          }
+          if (-not $iscc) { throw "ISCC.exe not found" }
+          Write-Host "Found ISCC at: $($iscc.FullName)"
+          & $iscc.FullName installer.iss
         shell: powershell
 
       - name: 计算安装程序 SHA256
