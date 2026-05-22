@@ -81,11 +81,11 @@ jobs:
           prerelease: false
 
       - name: 生成构建证明（SLSA Provenance）
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/WhisperSTT.exe
 
       - name: 生成构建证明（校验和文件）
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/WhisperSTT.exe.sha256.txt
