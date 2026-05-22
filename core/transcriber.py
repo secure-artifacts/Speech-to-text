@@ -73,6 +73,20 @@ SILENCE_THRESHOLD = 0.01     # 静音能量阈值
 SILENCE_DURATION = 1.2       # 静音多少秒后认为一段话结束（秒）
 MIN_SPEECH_SECONDS = 0.3     # 最少有多少秒有效语音才触发识别
 
+# ── 中文简/繁体处理 ──────────────────────────────────────────
+# Whisper 只有 "zh" 语言码，通过 initial_prompt 引导输出简/繁体字形。
+_LANGUAGE_ALIAS = {
+    "zh-Hans": "zh",    # 简体 → Whisper 内部码
+    "zh-Hant": "zh",    # 繁体 → Whisper 内部码
+}
+
+_INITIAL_PROMPTS = {
+    # 简体：用简体字的提示词，引导模型进入简体输出模式
+    "zh-Hans": "以下是用简体中文输入的内容：",
+    # 繁体：用繁体字的提示词，引导模型进入繁体输出模式
+    "zh-Hant": "以下是以繁體中文輸入的內容：",
+}
+
 
 class RealtimeTranscriber:
     """
@@ -206,17 +220,24 @@ class RealtimeTranscriber:
         try:
             with self._model_lock:
                 use_fp16 = (self._device == "cuda")  # GPU 用 FP16 更快
+
+                # 处理中文简/繁体：映射到 Whisper 内部语言码，并加提示词引导字形
+                lang = self.language
+                whisper_lang = _LANGUAGE_ALIAS.get(lang, lang)
+                initial_prompt = _INITIAL_PROMPTS.get(lang, None)
+
                 options = dict(
-                    language=self.language,
+                    language=whisper_lang,
                     fp16=use_fp16,
                     task="transcribe",
-                    # 实时模式优先速度：贪婪解码（beam_size=1 最快）
                     beam_size=1,
                     best_of=1,
                     temperature=0,
-                    # 不依赖上下文，避免幻觉且更快
                     condition_on_previous_text=False,
                 )
+                if initial_prompt:
+                    options["initial_prompt"] = initial_prompt
+
                 result = self._model.transcribe(audio_to_transcribe, **options)
 
             text = result.get("text", "").strip()

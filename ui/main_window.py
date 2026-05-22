@@ -861,8 +861,14 @@ class MainWindow(QMainWindow):
         settings_menu.addSeparator()
 
         lang_menu = settings_menu.addMenu("识别语言")
-        for name, code in [("自动检测", None), ("中文", "zh"), ("英文", "en"),
-                            ("日文", "ja"), ("韩文", "ko")]:
+        for name, code in [
+            ("自动检测",      None),
+            ("中文（简体）",  "zh-Hans"),
+            ("中文（繁体）",  "zh-Hant"),
+            ("英文",          "en"),
+            ("日文",          "ja"),
+            ("韩文",          "ko"),
+        ]:
             lang_menu.addAction(name, lambda c=code: self._on_language_changed(c))
 
         about_menu = menubar.addMenu("关于")
