@@ -1,7 +1,7 @@
 openai-whisper>=20231117
 sounddevice>=0.4.6
 soundfile>=0.12.1
-numpy>=1.24.0
+numpy>=2.4.6
 PyQt6>=6.6.0
 torch>=2.0.0
 pyperclip>=1.8.2
