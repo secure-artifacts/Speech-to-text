@@ -17,6 +17,15 @@ import threading
 import time
 import numpy as np
 
+# ── macOS 多进程 Dock 图标修复 ──────────────────────────────
+# torch 在 macOS 上可能内部启动工作进程（DataLoader 等），
+# 每个 spawn 子进程都会在 Dock 里生成一个新图标。
+# 设置以下环境变量强制单进程模式。
+if sys.platform == "darwin":
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    os.environ.setdefault("MKL_NUM_THREADS", "1")
+    os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
 # ── PyInstaller 打包路径修复 ────────────────────────────────
 if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
     _mei = sys._MEIPASS

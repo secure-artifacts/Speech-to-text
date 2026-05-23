@@ -208,15 +208,30 @@ jobs:
             --osx-bundle-identifier "com.whisper.stt" \
             main.py
 
-      - name: 将 Info.plist 中添加麦克风使用说明
+      - name: 注入 Info.plist 权限与单实例配置
         run: |
           PLIST="dist/WhisperSTT.app/Contents/Info.plist"
+
+          # 麦克风使用说明（必须，否则 macOS 不提示授权）
           /usr/libexec/PlistBuddy -c \
             "Add :NSMicrophoneUsageDescription string '语音转文字需要访问麦克风'" \
             "$PLIST" 2>/dev/null || \
           /usr/libexec/PlistBuddy -c \
             "Set :NSMicrophoneUsageDescription '语音转文字需要访问麦克风'" \
             "$PLIST"
+
+          # 禁止多实例启动（核心修复：防止说一句话出现一个新 App 图标）
+          /usr/libexec/PlistBuddy -c \
+            "Add :LSMultipleInstancesProhibited bool true" \
+            "$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c \
+            "Set :LSMultipleInstancesProhibited true" \
+            "$PLIST"
+
+          # 确认写入
+          echo "=== Info.plist key check ==="
+          /usr/libexec/PlistBuddy -c "Print :LSMultipleInstancesProhibited" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Print :NSMicrophoneUsageDescription" "$PLIST"
 
       - name: 代码签名（ad-hoc，无证书）
         run: |
