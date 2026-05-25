@@ -297,13 +297,13 @@ jobs:
 
     steps:
       - name: 下载 Windows 产物
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windows-build
           path: artifacts/windows
 
       - name: 下载 macOS 产物
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: macos-build
           path: artifacts/macos
